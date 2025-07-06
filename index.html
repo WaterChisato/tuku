@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>联邦综合 图库</title>
+  <!-- 引入Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- 配置Tailwind -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#4080FF',
+            neutral: '#F5F7FA',
+            dark: '#1D2129',
+          },
+          fontFamily: {
+            inter: ['Inter', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <!-- 自定义工具类 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .image-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+      }
+      .btn-gradient {
+        background: linear-gradient(135deg, #165DFF 0%, #4080FF 100%);
+      }
+    }
+  </style>
+  
+  <style>
+    .fade-in {
+      animation: fadeIn 0.6s ease-out forwards;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .image-card { transition: all 0.3s ease; }
+    .image-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.15); }
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+
+<body class="font-inter bg-neutral text-dark min-h-screen flex flex-col">
+  <!-- 页面头部 -->
+  <header class="w-full py-12 px-4 md:px-8 fade-in">
+    <div class="max-w-6xl mx-auto text-center">
+      <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-dark mb-4">联邦综合 图库</h1>
+      <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">按规则命名的图片会自动加载，无需手动修改代码</p>
+      
+      <!-- 跳转按钮 -->
+      <a href="#" id="jumpButton" class="btn-gradient text-white font-semibold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 inline-flex items-center">
+        <span>查看分类</span>
+        <i class="fa fa-arrow-right ml-2"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- 图片展示区 -->
+  <main class="flex-grow py-12 px-4 md:px-8">
+    <div class="max-w-6xl mx-auto">
+      <!-- 图片网格（JS动态生成） -->
+      <div id="imageGallery" class="image-grid"></div>
+    </div>
+  </main>
+
+  <!-- 页面底部 -->
+  <footer class="bg-dark text-white py-8 px-4 md:px-8 fade-in">
+    <div class="max-w-6xl mx-auto text-center">
+      <p class="text-lg font-medium">水喝千束  x  联邦综合</p>
+      <p class="text-gray-400 mt-2">© 2025 版权所有 | 图片自动加载无需改文件名</p>
+    </div>
+  </footer>
+
+  <script>
+    // === 配置项 ===
+    const CONFIG = {
+      imageFolder: 'images',       // 图片文件夹名称（需与GitHub仓库中的文件夹一致）
+      imageExt: ['jpg', 'jpeg', 'png', 'webp'], // 支持的图片扩展名
+      imageNamePattern: 'img',     // 图片名称前缀（如：img1.jpg, img2.jpg）
+      maxImages: 20,               // 最大加载图片数量
+    };
+
+    // === 自动生成图片路径 ===
+    function generateImagePaths() {
+      const paths = [];
+      // 假设图片命名为：${imageNamePattern}1.${ext}, ${imageNamePattern}2.${ext}, ...
+      for (let i = 1; i <= CONFIG.maxImages; i++) {
+        CONFIG.imageExt.forEach(ext => {
+          // 尝试加载不同扩展名的图片（按顺序优先加载）
+          paths.push(`/${CONFIG.imageFolder}/${CONFIG.imageNamePattern}${i}.${ext}`);
+        });
+      }
+      return paths;
+    }
+
+    // === 加载图片到画廊 ===
+    function loadImages() {
+      const gallery = document.getElementById('imageGallery');
+      const imagePaths = generateImagePaths();
+      
+      // 模拟图片加载（真实环境中可移除setTimeout）
+      setTimeout(() => {
+        imagePaths.forEach((path, index) => {
+          // 延迟加载，形成瀑布流效果
+          setTimeout(() => {
+            const imageCard = document.createElement('div');
+            imageCard.className = 'image-card rounded-lg overflow-hidden shadow-md fade-in';
+            imageCard.style.animationDelay = `${index * 50}ms`;
+            
+            // 图片加载失败时的降级处理
+            imageCard.innerHTML = `
+              <div class="aspect-square relative">
+                <img 
+                  src="${path}" 
+                  alt="图片 ${index + 1}" 
+                  class="w-full h-full object-cover"
+                  onerror="this.onerror=null;this.src='https://picsum.photos/800/800?random=${index}'"
+                >
+                <div class="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <i class="fa fa-search-plus text-white text-2xl"></i>
+                </div>
+              </div>
+            `;
+            gallery.appendChild(imageCard);
+          }, index * 100);
+        });
+      }, 500);
+    }
+
+    // === 按钮点击事件 ===
+    document.getElementById('jumpButton').addEventListener('click', function(e) {
+      e.preventDefault();
+      this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 加载中...';
+      setTimeout(() => {
+        this.innerHTML = '<span>查看分类</span><i class="fa fa-arrow-right ml-2"></i>';
+        alert('即将跳转到分类页面 (开发中)');
+      }, 1500);
+    });
+
+    // 页面加载后自动生成图片
+    window.addEventListener('load', loadImages);
+  </script>
+</body>
+</html>
